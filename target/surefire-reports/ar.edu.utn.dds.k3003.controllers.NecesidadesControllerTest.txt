@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: ar.edu.utn.dds.k3003.controllers.NecesidadesControllerTest
+-------------------------------------------------------------------------------
+Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.071 s -- in ar.edu.utn.dds.k3003.controllers.NecesidadesControllerTest
