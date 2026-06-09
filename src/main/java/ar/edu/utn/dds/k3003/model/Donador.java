@@ -1,18 +1,29 @@
 package ar.edu.utn.dds.k3003.model;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.EstadoDonadorEnum;
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "donadores")
 public class Donador {
 
-  private String id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
   private String nombre;
   private String apellido;
   private Integer edad;
   private String email;
   private String nroDocumento;
   private String domicilio;
+
+  @Enumerated(EnumType.STRING)
   private EstadoDonadorEnum estado;
+
   private String categoria;
+
+  protected Donador() {}
 
   public Donador(
       String nombre,
@@ -32,11 +43,13 @@ public class Donador {
   }
 
   public String getId() {
-    return id;
+    return String.valueOf(id);
   }
 
   public void setId(String id) {
-    this.id = id;
+    if (id != null) {
+      this.id = Long.parseLong(id);
+    }
   }
 
   public String getNombre() {

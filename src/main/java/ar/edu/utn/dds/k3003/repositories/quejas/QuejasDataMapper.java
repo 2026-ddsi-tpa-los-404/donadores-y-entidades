@@ -7,7 +7,7 @@ public class QuejasDataMapper {
 
   public QuejaDTO toQuejaDTO(Queja queja) {
     return new QuejaDTO(
-            queja.getId(),
+            String.valueOf(queja.getId()),
             queja.getDonacionId(),
             queja.getDonadorId(),
             queja.getFecha(),
@@ -16,7 +16,6 @@ public class QuejasDataMapper {
 
   public Queja toQueja(QuejaDTO entidadDTO) {
     return Queja.builder()
-            .id(entidadDTO.id())
             .donacionId(entidadDTO.donacionID())
             .donadorId(entidadDTO.donadorID())
             .fecha(entidadDTO.fecha())

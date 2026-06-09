@@ -7,7 +7,7 @@ public class EntidadesBeneficasDataMapper {
 
   public EntidadBeneficaDTO toEntidadBeneficaDTO(EntidadBenefica entidad) {
     return new EntidadBeneficaDTO(
-            entidad.getId(),
+            String.valueOf(entidad.getId()),
             entidad.getRazonSocial(),
             entidad.getDomicilio(),
             entidad.getTelefono(),
@@ -17,7 +17,6 @@ public class EntidadesBeneficasDataMapper {
 
   public EntidadBenefica toEntidadBenefica(EntidadBeneficaDTO entidadDTO) {
     return EntidadBenefica.builder()
-            .id(entidadDTO.id())
             .razonSocial(entidadDTO.razonSocial())
             .domicilio(entidadDTO.domicilio())
             .telefono(entidadDTO.telefono())

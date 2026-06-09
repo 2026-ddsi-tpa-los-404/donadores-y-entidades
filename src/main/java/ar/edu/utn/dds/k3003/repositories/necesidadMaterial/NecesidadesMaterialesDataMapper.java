@@ -9,7 +9,7 @@ public class NecesidadesMaterialesDataMapper {
 
   public NecesidadMaterialDTO toNecesidadMaterialDTO(NecesidadMaterial entidad) {
     return new NecesidadMaterialDTO(
-            entidad.getId(),
+            String.valueOf(entidad.getId()),
             entidad.getEntidadId(),
             entidad.getNivelDeUrgencia(),
             entidad.getDescripcion(),
@@ -21,7 +21,6 @@ public class NecesidadesMaterialesDataMapper {
 
   public NecesidadMaterial toNecesidadMaterial(NecesidadMaterialDTO entidadDTO) {
     NecesidadMaterial.NecesidadMaterialBuilder builder = NecesidadMaterial.builder()
-            .id(entidadDTO.id())
             .entidadId(entidadDTO.entidadID())
             .nivelDeUrgencia(entidadDTO.nivelDeUrgencia())
             .descripcion(entidadDTO.descripcion())

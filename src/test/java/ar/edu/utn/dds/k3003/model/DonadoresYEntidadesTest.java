@@ -13,15 +13,17 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 public class DonadoresYEntidadesTest {
 
+  @Autowired
   Fachada instancia;
-  @Mock FachadaIncentivos fachadaIncentivos;
+
+  @MockBean FachadaIncentivos fachadaIncentivos;
 
   DonadorDTO donadorEjemplo;
   EntidadBeneficaDTO entidadEjemplo;
@@ -30,8 +32,8 @@ public class DonadoresYEntidadesTest {
 
   @BeforeEach
   void setUp() {
-    instancia = new Fachada();
     instancia.setFachadaIncentivos(fachadaIncentivos);
+    instancia.limpiarTodo();
 
     donadorEjemplo =
         new DonadorDTO(
