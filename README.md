@@ -13,7 +13,7 @@
 ---
 
 🧩 Link al despliegue en Render
-- https://entrega-2-andrycarrascoutn.onrender.com
+- https://donadores-y-entidades-0uv4.onrender.com
 
 Documentacion de los endpoints: https://entrega-2-andrycarrascoutn.onrender.com/docs
 ---
