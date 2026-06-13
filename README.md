@@ -15,7 +15,7 @@
 🧩 Link al despliegue en Render
 - https://donadores-y-entidades-0uv4.onrender.com
 
-Documentacion de los endpoints: https://entrega-2-andrycarrascoutn.onrender.com/docs
+Documentacion de los endpoints: https://donadores-y-entidades-0uv4.onrender.com/swagger-ui/index.html
 ---
 
 ### ⚠️ Importante

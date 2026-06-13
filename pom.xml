@@ -60,6 +60,12 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Metrics - Datadog -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-datadog</artifactId>
+    </dependency>
+
     <!-- Existing Dependencies -->
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>

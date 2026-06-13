@@ -4,6 +4,7 @@ import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.*;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.InsigniaDTO;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonadoresYEntidades;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaIncentivos;
+import ar.edu.utn.dds.k3003.config.MetricsService;
 import ar.edu.utn.dds.k3003.exceptions.DonadorNoEncontradoException;
 import ar.edu.utn.dds.k3003.exceptions.DonadorYaExistenteException;
 import ar.edu.utn.dds.k3003.model.Donador;
@@ -19,6 +20,8 @@ import ar.edu.utn.dds.k3003.repositories.necesidadMaterial.NecesidadMaterialJpaR
 import ar.edu.utn.dds.k3003.repositories.necesidadMaterial.NecesidadesMaterialesDataMapper;
 import ar.edu.utn.dds.k3003.repositories.quejas.QuejaJpaRepository;
 import ar.edu.utn.dds.k3003.repositories.quejas.QuejasDataMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -29,12 +32,14 @@ import java.util.Optional;
 @Service
 public class Fachada implements FachadaDonadoresYEntidades {
 
+  private static final Logger log = LoggerFactory.getLogger(Fachada.class);
+
   private final DonadorJpaRepository donadoresRepository;
   private final QuejaJpaRepository quejasRepository;
   private final EntidadBeneficaJpaRepository entidadesBeneficasRepository;
   private final NecesidadMaterialJpaRepository necesidadesMaterialesRepository;
-
-  private FachadaIncentivos fachadaIncentivos;
+  private final MetricsService metricsService;
+  private final FachadaIncentivos fachadaIncentivos;
 
   private final DonadoresYEntidadesDataMapper donadoresYEntidadesDataMapper =
       new DonadoresYEntidadesDataMapper();
@@ -47,15 +52,20 @@ public class Fachada implements FachadaDonadoresYEntidades {
       DonadorJpaRepository donadoresRepository,
       QuejaJpaRepository quejasRepository,
       EntidadBeneficaJpaRepository entidadesBeneficasRepository,
-      NecesidadMaterialJpaRepository necesidadesMaterialesRepository) {
+      NecesidadMaterialJpaRepository necesidadesMaterialesRepository,
+      MetricsService metricsService,
+      FachadaIncentivos fachadaIncentivos) {
     this.donadoresRepository = donadoresRepository;
     this.quejasRepository = quejasRepository;
     this.entidadesBeneficasRepository = entidadesBeneficasRepository;
     this.necesidadesMaterialesRepository = necesidadesMaterialesRepository;
+    this.metricsService = metricsService;
+    this.fachadaIncentivos = fachadaIncentivos;
   }
 
   @Override
   public DonadorDTO agregarDonador(DonadorDTO donadorDTO) {
+    log.info("[METRICA] Operación: agregarDonador - nombre={} apellido={}", donadorDTO.nombre(), donadorDTO.apellido());
     if (donadorDTO.id() != null && this.donadoresRepository.findById(Long.parseLong(donadorDTO.id())).isPresent()) {
       throw new DonadorYaExistenteException("Ya existe un donador con ese ID");
     }
@@ -63,14 +73,21 @@ public class Fachada implements FachadaDonadoresYEntidades {
     Donador donador = donadoresYEntidadesDataMapper.toDonador(donadorDTO);
     Donador donadorGuardado = this.donadoresRepository.save(donador);
 
+    metricsService.incrementarDonadorAgregado();
+    metricsService.incrementarConsultaDB();
+    log.info("[METRICA] Enviada: dds.donadores.agregados +1 | dds.consultas.db +1 | donadorId={}", donadorGuardado.getId());
+
     return donadoresYEntidadesDataMapper.toDonadorDTO(donadorGuardado);
   }
 
   @Override
   public DonadorDTO buscarDonadorPorID(String donadorID) throws NoSuchElementException {
+    log.info("[METRICA] Operación: buscarDonadorPorID - id={}", donadorID);
+    metricsService.incrementarConsultaDB();
     Optional<Donador> donadorOptional = this.donadoresRepository.findById(Long.parseLong(donadorID));
 
     if (donadorOptional.isEmpty()) {
+      log.warn("[METRICA] Donador no encontrado - id={}", donadorID);
       throw new DonadorNoEncontradoException("No existe un donador con ese ID");
     }
     Donador donadorFinal = donadorOptional.get();
@@ -80,6 +97,7 @@ public class Fachada implements FachadaDonadoresYEntidades {
 
   @Override
   public Boolean puedeDonar(String donadorID) throws NoSuchElementException {
+    log.info("[METRICA] Operación: puedeDonar - donadorId={}", donadorID);
     DonadorDTO donadorDTO = this.buscarDonadorPorID(donadorID);
 
     return switch (donadorDTO.estado()) {
@@ -92,6 +110,7 @@ public class Fachada implements FachadaDonadoresYEntidades {
   @Override
   public DonadorDTO modificarEstado(String donadorID, EstadoDonadorEnum estado)
       throws NoSuchElementException {
+    log.info("[METRICA] Operación: modificarEstado - donadorId={} nuevoEstado={}", donadorID, estado);
 
     if (estado == null) {
       throw new RuntimeException("El estado no puede ser nulo");
@@ -147,6 +166,7 @@ public class Fachada implements FachadaDonadoresYEntidades {
 
   @Override
   public QuejaDTO agregarQueja(QuejaDTO quejaDTO) throws NoSuchElementException {
+    log.info("[METRICA] Operación: agregarQueja - donadorId={} donacionId={}", quejaDTO != null ? quejaDTO.donadorID() : null, quejaDTO != null ? quejaDTO.donacionID() : null);
     if (quejaDTO == null) {
       throw new RuntimeException("La queja no puede ser nula");
     }
@@ -159,6 +179,10 @@ public class Fachada implements FachadaDonadoresYEntidades {
     queja.setFecha(LocalDate.now());
 
     Queja quejaGuardado = this.quejasRepository.save(queja);
+
+    metricsService.incrementarQuejaRegistrada();
+    metricsService.incrementarConsultaDB();
+    log.info("[METRICA] Enviada: dds.quejas.registradas +1 | dds.consultas.db +1 | quejaId={}", quejaGuardado.getId());
 
     // Actualizar estado del donador segun cantidad de quejas
     String donadorId = quejaDTO.donadorID();
@@ -194,6 +218,7 @@ public class Fachada implements FachadaDonadoresYEntidades {
 
   @Override
   public EntidadBeneficaDTO agregarEntidad(EntidadBeneficaDTO entidadBeneficaDTO) {
+    log.info("[METRICA] Operación: agregarEntidad - razonSocial={}", entidadBeneficaDTO != null ? entidadBeneficaDTO.razonSocial() : null);
     if (entidadBeneficaDTO == null) {
       throw new RuntimeException("La entidad benefica no puede ser nula");
     }
@@ -205,11 +230,16 @@ public class Fachada implements FachadaDonadoresYEntidades {
     EntidadBenefica entidadBenefica = entidadesBeneficasDataMapper.toEntidadBenefica(entidadBeneficaDTO);
     EntidadBenefica entidadBeneficaGuardado = this.entidadesBeneficasRepository.save(entidadBenefica);
 
+    metricsService.incrementarEntidadAgregada();
+    metricsService.incrementarConsultaDB();
+    log.info("[METRICA] Enviada: dds.entidades.agregadas +1 | dds.consultas.db +1 | entidadId={}", entidadBeneficaGuardado.getId());
+
     return entidadesBeneficasDataMapper.toEntidadBeneficaDTO(entidadBeneficaGuardado);
   }
 
   @Override
   public EntidadBeneficaDTO buscarEntidadPorID(String entidadID) throws NoSuchElementException {
+    metricsService.incrementarConsultaDB();
     Optional<EntidadBenefica> entidadBeneficaOptional = this.entidadesBeneficasRepository.findById(Long.parseLong(entidadID));
     if (entidadBeneficaOptional.isEmpty()) {
       throw new NoSuchElementException("No existe una entidad benefica con ese ID");
@@ -220,6 +250,7 @@ public class Fachada implements FachadaDonadoresYEntidades {
 
   @Override
   public NecesidadMaterialDTO registrarNecesidad(NecesidadMaterialDTO necesidadMaterialDTO) {
+    log.info("[METRICA] Operación: registrarNecesidad - entidadId={} productoId={}", necesidadMaterialDTO != null ? necesidadMaterialDTO.entidadID() : null, necesidadMaterialDTO != null ? necesidadMaterialDTO.productoSolicitadoID() : null);
     if (necesidadMaterialDTO == null) {
       throw new RuntimeException("La necesidad material no puede ser nula");
     }
@@ -230,6 +261,10 @@ public class Fachada implements FachadaDonadoresYEntidades {
 
     NecesidadMaterial necesidadMaterial = necesidadesMaterialesDataMapper.toNecesidadMaterial(necesidadMaterialDTO);
     NecesidadMaterial necesidadMaterialGuardado = this.necesidadesMaterialesRepository.save(necesidadMaterial);
+
+    metricsService.incrementarNecesidadRegistrada();
+    metricsService.incrementarConsultaDB();
+    log.info("[METRICA] Enviada: dds.necesidades.registradas +1 | dds.consultas.db +1 | necesidadId={}", necesidadMaterialGuardado.getId());
 
     return necesidadesMaterialesDataMapper.toNecesidadMaterialDTO(necesidadMaterialGuardado);
   }
@@ -263,6 +298,10 @@ public class Fachada implements FachadaDonadoresYEntidades {
     necesidad.setCantidadObjetivo(Math.max(cantidadObjetivo, 0));
 
     NecesidadMaterial necesidadActualizada = this.necesidadesMaterialesRepository.save(necesidad);
+
+    metricsService.incrementarNecesidadSatisfecha();
+    metricsService.incrementarConsultaDB();
+    log.info("[METRICA] Enviada: dds.necesidades.satisfechas +1 | dds.consultas.db +1 | necesidadId={} cantidadRestante={}", necesidadID, necesidadActualizada.getCantidadObjetivo());
 
     return necesidadesMaterialesDataMapper.toNecesidadMaterialDTO(necesidadActualizada);
   }
@@ -301,7 +340,7 @@ public class Fachada implements FachadaDonadoresYEntidades {
 
   @Override
   public void setFachadaIncentivos(FachadaIncentivos fachadaIncentivos) {
-    this.fachadaIncentivos = fachadaIncentivos;
+    // Se inyecta por constructor, este método existe por compatibilidad con la interfaz
   }
 
   // Métodos para limpiar la base de datos

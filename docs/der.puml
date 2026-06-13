@@ -1,0 +1,75 @@
+@startuml DER - Donadores y Entidades
+
+!define TABLE(x) entity x << (T, #FFAAAA) >>
+
+skinparam entity {
+  BackgroundColor #F9F9F9
+  BorderColor #333333
+}
+
+TABLE(donadores) {
+  * **id** : BIGSERIAL <<PK>>
+  --
+  nombre : VARCHAR(255)
+  apellido : VARCHAR(255)
+  edad : INTEGER
+  email : VARCHAR(255)
+  nro_documento : VARCHAR(255)
+  domicilio : VARCHAR(255)
+  estado : VARCHAR(255) <<ENUM>>
+  categoria : VARCHAR(255)
+}
+
+TABLE(entidades_beneficas) {
+  * **id** : BIGSERIAL <<PK>>
+  --
+  razon_social : VARCHAR(255)
+  domicilio : VARCHAR(255)
+  telefono : VARCHAR(255)
+  correo : VARCHAR(255)
+}
+
+TABLE(necesidades_materiales) {
+  * **id** : BIGSERIAL <<PK>>
+  --
+  entidad_id : VARCHAR(255) <<FK lógica>>
+  nivel_de_urgencia : INTEGER
+  descripcion : VARCHAR(255)
+  cantidad_objetivo : INTEGER
+  producto_solicitado_id : VARCHAR(255)
+  tipo : VARCHAR(255) <<ENUM>>
+  periodo : VARCHAR(255) <<ENUM>>
+  fecha_ultima_satisfaccion : DATE
+}
+
+TABLE(quejas) {
+  * **id** : BIGSERIAL <<PK>>
+  --
+  donacion_id : VARCHAR(255)
+  donador_id : VARCHAR(255) <<FK lógica>>
+  fecha : DATE
+  descripcion : VARCHAR(255)
+}
+
+donadores ||--o{ quejas : "donador_id"
+entidades_beneficas ||--o{ necesidades_materiales : "entidad_id"
+
+note bottom of quejas
+  donador_id referencia lógica
+  a donadores.id
+  (sin FK en BD por diseño
+  de microservicios)
+end note
+
+note bottom of necesidades_materiales
+  entidad_id referencia lógica
+  a entidades_beneficas.id
+  tipo: UNICA | RECURRENTE
+  periodo: SEMANAL | MENSUAL
+end note
+
+note bottom of donadores
+  estado: VERIFICADO | SOSPECHOSO | BANEADO
+end note
+
+@enduml

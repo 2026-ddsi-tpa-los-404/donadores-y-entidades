@@ -1,3 +1,6 @@
 target
 .mvn
 .idea
+.vscode
+
+metrics-javalin-dds-example
