@@ -70,4 +70,44 @@ public class NecesidadesController {
     NecesidadMaterialDTO necesidadActualizada = fachada.satisfacerNecesidad(necesidadId, satisfaccionRequest.cantidad());
     return ResponseEntity.ok(necesidadActualizada);
   }
+
+  // Nuevos GET, PUT y DELETE para Obtener necesidad por ID, Modificar necesidad material y Borrar necesidad material
+
+  @Operation(summary = "Obtener necesidad por ID", description = "Busca una necesidad material por su identificador")
+  @ApiResponses({
+          @ApiResponse(responseCode = "200", description = "Necesidad encontrada",
+                  content = @Content(schema = @Schema(implementation = NecesidadMaterialDTO.class))),
+          @ApiResponse(responseCode = "404", description = "Necesidad no encontrada")
+  })
+  @GetMapping("/{id}")
+  public ResponseEntity<NecesidadMaterialDTO> getNecesidadByID(
+          @Parameter(description = "ID de la necesidad") @PathVariable String id) {
+    return ResponseEntity.ok(this.fachada.buscarNecesidadPorID(id));
+  }
+
+  @Operation(summary = "Modificar necesidad material", description = "Actualiza urgencia, descripción o cantidad de una necesidad")
+  @ApiResponses({
+          @ApiResponse(responseCode = "200", description = "Necesidad actualizada exitosamente",
+                  content = @Content(schema = @Schema(implementation = NecesidadMaterialDTO.class))),
+          @ApiResponse(responseCode = "404", description = "Necesidad no encontrada")
+  })
+  @PutMapping("/{id}")
+  public ResponseEntity<NecesidadMaterialDTO> putNecesidad(
+          @Parameter(description = "ID de la necesidad") @PathVariable String id,
+          @RequestBody NecesidadMaterialDTO necesidadDTO) {
+    NecesidadMaterialDTO necesidadActualizada = fachada.modificarNecesidad(id, necesidadDTO);
+    return ResponseEntity.ok(necesidadActualizada);
+  }
+
+  @Operation(summary = "Borrar necesidad material", description = "Elimina una necesidad material del sistema")
+  @ApiResponses({
+          @ApiResponse(responseCode = "200", description = "Necesidad eliminada exitosamente"),
+          @ApiResponse(responseCode = "404", description = "Necesidad no encontrada")
+  })
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteNecesidad(
+          @Parameter(description = "ID de la necesidad") @PathVariable String id) {
+    fachada.eliminarNecesidad(id);
+    return ResponseEntity.ok().build(); // Retorna 200 OK sin body
+  }
 }

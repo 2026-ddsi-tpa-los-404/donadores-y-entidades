@@ -56,4 +56,19 @@ public class EntidadesController {
       @Parameter(description = "ID de la entidad benéfica") @PathVariable String id) {
     return ResponseEntity.ok(this.fachada.buscarEntidadPorID(id));
   }
+
+  // Nuevo PUT para Modificar entidad benéfica
+  @Operation(summary = "Modificar entidad benéfica", description = "Actualiza los datos de una entidad benéfica existente")
+  @ApiResponses({
+          @ApiResponse(responseCode = "200", description = "Entidad actualizada exitosamente",
+                  content = @Content(schema = @Schema(implementation = EntidadBeneficaDTO.class))),
+          @ApiResponse(responseCode = "404", description = "Entidad no encontrada")
+  })
+  @PutMapping("/{id}")
+  public ResponseEntity<EntidadBeneficaDTO> putEntidad(
+          @Parameter(description = "ID de la entidad benéfica") @PathVariable String id,
+          @RequestBody EntidadBeneficaDTO entidadDTO) {
+    EntidadBeneficaDTO entidadActualizada = fachada.modificarEntidad(id, entidadDTO);
+    return ResponseEntity.ok(entidadActualizada);
+  }
 }

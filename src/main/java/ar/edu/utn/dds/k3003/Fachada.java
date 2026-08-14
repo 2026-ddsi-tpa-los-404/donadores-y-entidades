@@ -366,4 +366,61 @@ public class Fachada implements FachadaDonadoresYEntidades {
     this.entidadesBeneficasRepository.deleteAll();
     this.donadoresRepository.deleteAll();
   }
+
+  // =========================================================================
+  // NUEVOS MÉTODOS QUE FALTABAN PARA EL BOT
+  // =========================================================================
+
+  public EntidadBeneficaDTO modificarEntidad(String id, EntidadBeneficaDTO dto) throws NoSuchElementException {
+    Optional<EntidadBenefica> entidadOpt = this.entidadesBeneficasRepository.findById(Long.parseLong(id));
+    if (entidadOpt.isEmpty()) {
+      throw new NoSuchElementException("No existe una entidad benefica con ese ID");
+    }
+    EntidadBenefica entidad = entidadOpt.get();
+
+    // Actualizamos solo si vienen en el DTO
+    if (dto.razonSocial() != null) entidad.setRazonSocial(dto.razonSocial());
+    if (dto.domicilio() != null) entidad.setDomicilio(dto.domicilio());
+    if (dto.telefono() != null) entidad.setTelefono(dto.telefono());
+    if (dto.correo() != null) entidad.setCorreo(dto.correo());
+
+    EntidadBenefica guardada = this.entidadesBeneficasRepository.save(entidad);
+    metricsService.incrementarConsultaDB();
+    return entidadesBeneficasDataMapper.toEntidadBeneficaDTO(guardada);
+  }
+
+  public NecesidadMaterialDTO buscarNecesidadPorID(String id) throws NoSuchElementException {
+    metricsService.incrementarConsultaDB();
+    Optional<NecesidadMaterial> necesidadOpt = this.necesidadesMaterialesRepository.findById(Long.parseLong(id));
+    if (necesidadOpt.isEmpty()) {
+      throw new NoSuchElementException("No existe una necesidad material con ese ID");
+    }
+    return necesidadesMaterialesDataMapper.toNecesidadMaterialDTO(necesidadOpt.get());
+  }
+
+  public NecesidadMaterialDTO modificarNecesidad(String id, NecesidadMaterialDTO dto) throws NoSuchElementException {
+    Optional<NecesidadMaterial> necesidadOpt = this.necesidadesMaterialesRepository.findById(Long.parseLong(id));
+    if (necesidadOpt.isEmpty()) {
+      throw new NoSuchElementException("No existe una necesidad material con ese ID");
+    }
+    NecesidadMaterial necesidad = necesidadOpt.get();
+
+    // Modificamos solo urgencia, descripción y cantidad (como lo definimos en el bot)
+    if (dto.nivelDeUrgencia() != null) necesidad.setNivelDeUrgencia(dto.nivelDeUrgencia());
+    if (dto.descripcion() != null) necesidad.setDescripcion(dto.descripcion());
+    if (dto.cantidadObjetivo() != null) necesidad.setCantidadObjetivo(dto.cantidadObjetivo());
+
+    NecesidadMaterial guardada = this.necesidadesMaterialesRepository.save(necesidad);
+    metricsService.incrementarConsultaDB();
+    return necesidadesMaterialesDataMapper.toNecesidadMaterialDTO(guardada);
+  }
+
+  public void eliminarNecesidad(String id) throws NoSuchElementException {
+    Optional<NecesidadMaterial> necesidadOpt = this.necesidadesMaterialesRepository.findById(Long.parseLong(id));
+    if (necesidadOpt.isEmpty()) {
+      throw new NoSuchElementException("No existe una necesidad material con ese ID");
+    }
+    this.necesidadesMaterialesRepository.delete(necesidadOpt.get());
+    metricsService.incrementarConsultaDB();
+  }
 }
