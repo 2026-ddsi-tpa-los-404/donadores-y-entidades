@@ -1,9 +1,12 @@
 package ar.edu.utn.dds.k3003;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.*;
+import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.ProductoDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.InsigniaDTO;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonadoresYEntidades;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaIncentivos;
+import ar.edu.utn.dds.k3003.rest.DonacionesClient;
+import ar.edu.utn.dds.k3003.rest.LogisticaClient;
 import ar.edu.utn.dds.k3003.config.MetricsService;
 import ar.edu.utn.dds.k3003.exceptions.DonadorNoEncontradoException;
 import ar.edu.utn.dds.k3003.exceptions.DonadorYaExistenteException;
@@ -40,6 +43,8 @@ public class Fachada implements FachadaDonadoresYEntidades {
   private final NecesidadMaterialJpaRepository necesidadesMaterialesRepository;
   private final MetricsService metricsService;
   private final FachadaIncentivos fachadaIncentivos;
+  private final DonacionesClient donacionesClient;
+  private final LogisticaClient logisticaClient;
 
   private final DonadoresYEntidadesDataMapper donadoresYEntidadesDataMapper =
       new DonadoresYEntidadesDataMapper();
@@ -54,13 +59,17 @@ public class Fachada implements FachadaDonadoresYEntidades {
       EntidadBeneficaJpaRepository entidadesBeneficasRepository,
       NecesidadMaterialJpaRepository necesidadesMaterialesRepository,
       MetricsService metricsService,
-      FachadaIncentivos fachadaIncentivos) {
+      FachadaIncentivos fachadaIncentivos,
+      DonacionesClient donacionesClient,
+      LogisticaClient logisticaClient) {
     this.donadoresRepository = donadoresRepository;
     this.quejasRepository = quejasRepository;
     this.entidadesBeneficasRepository = entidadesBeneficasRepository;
     this.necesidadesMaterialesRepository = necesidadesMaterialesRepository;
     this.metricsService = metricsService;
     this.fachadaIncentivos = fachadaIncentivos;
+    this.donacionesClient = donacionesClient;
+    this.logisticaClient = logisticaClient;
   }
 
   @Override
@@ -259,8 +268,32 @@ public class Fachada implements FachadaDonadoresYEntidades {
       throw new RuntimeException("Ya existe una necesidad material con ese ID");
     }
 
+    // Validar que el producto exista en el módulo Donaciones
+    String productoID = necesidadMaterialDTO.productoSolicitadoID();
+    Optional<ProductoDTO> producto = donacionesClient.buscarProducto(productoID);
+    if (producto.isEmpty()) {
+      throw new RuntimeException("El producto solicitado con ID " + productoID + " no existe en el módulo de Donaciones");
+    }
+
     NecesidadMaterial necesidadMaterial = necesidadesMaterialesDataMapper.toNecesidadMaterial(necesidadMaterialDTO);
     NecesidadMaterial necesidadMaterialGuardado = this.necesidadesMaterialesRepository.save(necesidadMaterial);
+
+    // Consultar stock disponible en el módulo Logística
+    Integer stockDisponible = logisticaClient.consultarStockDeProducto(productoID);
+    if (stockDisponible > 0) {
+      int cantidadAAsignar = Math.min(stockDisponible, necesidadMaterialGuardado.getCantidadObjetivo());
+      boolean asignado = logisticaClient.asignarStockANecesidad(
+          productoID,
+          String.valueOf(necesidadMaterialGuardado.getId()),
+          cantidadAAsignar);
+
+      if (asignado) {
+        int nuevaCantidad = necesidadMaterialGuardado.getCantidadObjetivo() - cantidadAAsignar;
+        necesidadMaterialGuardado.setCantidadObjetivo(Math.max(nuevaCantidad, 0));
+        necesidadMaterialGuardado = this.necesidadesMaterialesRepository.save(necesidadMaterialGuardado);
+        log.info("Stock asignado automáticamente: {} unidades para necesidad {}", cantidadAAsignar, necesidadMaterialGuardado.getId());
+      }
+    }
 
     metricsService.incrementarNecesidadRegistrada();
     metricsService.incrementarConsultaDB();
@@ -336,6 +369,46 @@ public class Fachada implements FachadaDonadoresYEntidades {
             .stream()
             .map(entidadesBeneficasDataMapper::toEntidadBeneficaDTO)
             .toList();
+  }
+
+  public void actualizarEntidad(EntidadBeneficaDTO dto) {
+    Optional<EntidadBenefica> entidadOpt = this.entidadesBeneficasRepository.findById(Long.parseLong(dto.id()));
+    if (entidadOpt.isEmpty()) {
+      throw new NoSuchElementException("No existe una entidad benefica con ID " + dto.id());
+    }
+    EntidadBenefica entidad = entidadOpt.get();
+    if (dto.razonSocial() != null) entidad.setRazonSocial(dto.razonSocial());
+    if (dto.domicilio() != null) entidad.setDomicilio(dto.domicilio());
+    if (dto.telefono() != null) entidad.setTelefono(dto.telefono());
+    if (dto.correo() != null) entidad.setCorreo(dto.correo());
+    this.entidadesBeneficasRepository.save(entidad);
+  }
+
+  public NecesidadMaterialDTO buscarNecesidadPorID(String id) {
+    Optional<NecesidadMaterial> necesidadOpt = this.necesidadesMaterialesRepository.findById(Long.parseLong(id));
+    if (necesidadOpt.isEmpty()) {
+      throw new NoSuchElementException("No existe una necesidad material con ID " + id);
+    }
+    return necesidadesMaterialesDataMapper.toNecesidadMaterialDTO(necesidadOpt.get());
+  }
+
+  public void borrarNecesidad(String id) {
+    if (!this.necesidadesMaterialesRepository.existsById(Long.parseLong(id))) {
+      throw new NoSuchElementException("No existe una necesidad material con ID " + id);
+    }
+    this.necesidadesMaterialesRepository.deleteById(Long.parseLong(id));
+  }
+
+  public void actualizarNecesidad(NecesidadMaterialDTO dto) {
+    Optional<NecesidadMaterial> necesidadOpt = this.necesidadesMaterialesRepository.findById(Long.parseLong(dto.id()));
+    if (necesidadOpt.isEmpty()) {
+      throw new NoSuchElementException("No existe una necesidad material con ID " + dto.id());
+    }
+    NecesidadMaterial necesidad = necesidadOpt.get();
+    if (dto.cantidadObjetivo() != null) necesidad.setCantidadObjetivo(dto.cantidadObjetivo());
+    if (dto.descripcion() != null) necesidad.setDescripcion(dto.descripcion());
+    if (dto.nivelDeUrgencia() != null) necesidad.setNivelDeUrgencia(dto.nivelDeUrgencia());
+    this.necesidadesMaterialesRepository.save(necesidad);
   }
 
   @Override

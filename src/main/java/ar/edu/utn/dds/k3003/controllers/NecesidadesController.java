@@ -70,4 +70,50 @@ public class NecesidadesController {
     NecesidadMaterialDTO necesidadActualizada = fachada.satisfacerNecesidad(necesidadId, satisfaccionRequest.cantidad());
     return ResponseEntity.ok(necesidadActualizada);
   }
+
+  @Operation(summary = "Buscar necesidad por ID", description = "Obtiene una necesidad material por su identificador")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Necesidad encontrada",
+          content = @Content(schema = @Schema(implementation = NecesidadMaterialDTO.class))),
+      @ApiResponse(responseCode = "404", description = "Necesidad no encontrada")
+  })
+  @GetMapping("/{id}")
+  public ResponseEntity<NecesidadMaterialDTO> getNecesidadByID(
+      @Parameter(description = "ID de la necesidad material") @PathVariable String id) {
+    return ResponseEntity.ok(fachada.buscarNecesidadPorID(id));
+  }
+
+  @Operation(summary = "Borrar necesidad por ID", description = "Elimina una necesidad material del sistema")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Necesidad eliminada exitosamente"),
+      @ApiResponse(responseCode = "404", description = "Necesidad no encontrada")
+  })
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteNecesidad(
+      @Parameter(description = "ID de la necesidad material") @PathVariable String id) {
+    fachada.borrarNecesidad(id);
+    return ResponseEntity.ok().build();
+  }
+
+  @Operation(summary = "Modificar necesidad por ID", description = "Actualiza los datos de una necesidad material existente")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Necesidad actualizada",
+          content = @Content(schema = @Schema(implementation = NecesidadMaterialDTO.class))),
+      @ApiResponse(responseCode = "404", description = "Necesidad no encontrada")
+  })
+  @PutMapping("/{id}")
+  public ResponseEntity<NecesidadMaterialDTO> putNecesidad(
+      @Parameter(description = "ID de la necesidad material") @PathVariable String id,
+      @RequestBody NecesidadMaterialDTO necesidadDTO) {
+    NecesidadMaterialDTO dtoConId = new NecesidadMaterialDTO(
+        id,
+        necesidadDTO.entidadID(),
+        necesidadDTO.nivelDeUrgencia(),
+        necesidadDTO.descripcion(),
+        necesidadDTO.cantidadObjetivo(),
+        necesidadDTO.productoSolicitadoID(),
+        necesidadDTO.tipo());
+    fachada.actualizarNecesidad(dtoConId);
+    return ResponseEntity.ok(fachada.buscarNecesidadPorID(id));
+  }
 }
