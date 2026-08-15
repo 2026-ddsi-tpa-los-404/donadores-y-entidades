@@ -384,14 +384,6 @@ public class Fachada implements FachadaDonadoresYEntidades {
     this.entidadesBeneficasRepository.save(entidad);
   }
 
-  public NecesidadMaterialDTO buscarNecesidadPorID(String id) {
-    Optional<NecesidadMaterial> necesidadOpt = this.necesidadesMaterialesRepository.findById(Long.parseLong(id));
-    if (necesidadOpt.isEmpty()) {
-      throw new NoSuchElementException("No existe una necesidad material con ID " + id);
-    }
-    return necesidadesMaterialesDataMapper.toNecesidadMaterialDTO(necesidadOpt.get());
-  }
-
   public void borrarNecesidad(String id) {
     if (!this.necesidadesMaterialesRepository.existsById(Long.parseLong(id))) {
       throw new NoSuchElementException("No existe una necesidad material con ID " + id);
