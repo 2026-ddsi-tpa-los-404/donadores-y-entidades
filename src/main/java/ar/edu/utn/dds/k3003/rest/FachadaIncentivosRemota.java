@@ -5,6 +5,7 @@ import ar.edu.utn.dds.k3003.catedra.dtos.incentivos.MisionDTO;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonaciones;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonadoresYEntidades;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaIncentivos;
+import ar.edu.utn.dds.k3003.logging.TraceIdPropagationInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -19,9 +20,11 @@ public class FachadaIncentivosRemota implements FachadaIncentivos {
   private final RestClient restClient;
 
   public FachadaIncentivosRemota(
-      @Value("${incentivos.url:https://incentivos-nhyc.onrender.com}") String baseUrl) {
+      @Value("${incentivos.url:https://incentivos-nhyc.onrender.com}") String baseUrl,
+      TraceIdPropagationInterceptor traceIdInterceptor) {
     this.restClient = RestClient.builder()
         .baseUrl(baseUrl)
+        .requestInterceptor(traceIdInterceptor)
         .build();
   }
 

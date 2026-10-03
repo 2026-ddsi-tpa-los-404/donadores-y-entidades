@@ -2,6 +2,7 @@ package ar.edu.utn.dds.k3003.rest;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.PaqueteDTO;
+import ar.edu.utn.dds.k3003.logging.TraceIdPropagationInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,9 +20,11 @@ public class LogisticaClient {
 
   private final RestClient restClient;
 
-  public LogisticaClient(@Value("${services.logistica.url}") String baseUrl) {
+  public LogisticaClient(@Value("${services.logistica.url}") String baseUrl,
+                         TraceIdPropagationInterceptor traceIdInterceptor) {
     this.restClient = RestClient.builder()
         .baseUrl(baseUrl)
+        .requestInterceptor(traceIdInterceptor)
         .build();
   }
 

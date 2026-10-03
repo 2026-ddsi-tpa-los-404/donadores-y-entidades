@@ -1,6 +1,7 @@
 package ar.edu.utn.dds.k3003.rest;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.donaciones.ProductoDTO;
+import ar.edu.utn.dds.k3003.logging.TraceIdPropagationInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,9 +17,11 @@ public class DonacionesClient {
 
   private final RestClient restClient;
 
-  public DonacionesClient(@Value("${services.donaciones.url}") String baseUrl) {
+  public DonacionesClient(@Value("${services.donaciones.url}") String baseUrl,
+                          TraceIdPropagationInterceptor traceIdInterceptor) {
     this.restClient = RestClient.builder()
         .baseUrl(baseUrl)
+        .requestInterceptor(traceIdInterceptor)
         .build();
   }
 

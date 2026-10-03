@@ -66,6 +66,12 @@
       <artifactId>micrometer-registry-datadog</artifactId>
     </dependency>
 
+    <!-- Logging centralizado: janino habilita la condicion <if> en logback-spring.xml -->
+    <dependency>
+      <groupId>org.codehaus.janino</groupId>
+      <artifactId>janino</artifactId>
+    </dependency>
+
     <!-- Existing Dependencies -->
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
