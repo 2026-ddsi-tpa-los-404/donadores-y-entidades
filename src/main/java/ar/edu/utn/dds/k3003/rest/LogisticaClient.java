@@ -1,5 +1,6 @@
 package ar.edu.utn.dds.k3003.rest;
 
+import ar.edu.utn.dds.k3003.catedra.dtos.donadoresYEntidades.NecesidadMaterialDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.PaqueteDTO;
 import ar.edu.utn.dds.k3003.logging.TraceIdPropagationInterceptor;
@@ -7,11 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class LogisticaClient {
@@ -53,21 +55,18 @@ public class LogisticaClient {
     }
   }
 
-  public boolean asignarStockANecesidad(String productoID, String necesidadID, Integer cantidad) {
+  // Logística decide cuánto asignar: 201 si creó una asignación, 204 si no había stock aplicable.
+  public boolean asignarStockANecesidad(NecesidadMaterialDTO necesidad) {
     try {
-      restClient.post()
-          .uri("/stock/asignar")
-          .body(Map.of(
-              "productoID", productoID,
-              "necesidadID", necesidadID,
-              "cantidad", cantidad,
-              "origen", "DONADORES_Y_ENTIDADES"
-          ))
+      HttpStatusCode status = restClient.post()
+          .uri("/asignaciones/stock")
+          .body(necesidad)
           .retrieve()
-          .body(Void.class);
-      return true;
+          .toBodilessEntity()
+          .getStatusCode();
+      return status.value() == HttpStatus.CREATED.value();
     } catch (Exception e) {
-      log.warn("Error al asignar stock para necesidad {}: {}", necesidadID, e.getMessage());
+      log.warn("Error al asignar stock para necesidad {}: {}", necesidad.id(), e.getMessage());
       return false;
     }
   }

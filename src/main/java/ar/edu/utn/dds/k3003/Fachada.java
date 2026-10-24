@@ -278,20 +278,15 @@ public class Fachada implements FachadaDonadoresYEntidades {
     NecesidadMaterial necesidadMaterial = necesidadesMaterialesDataMapper.toNecesidadMaterial(necesidadMaterialDTO);
     NecesidadMaterial necesidadMaterialGuardado = this.necesidadesMaterialesRepository.save(necesidadMaterial);
 
-    // Consultar stock disponible en el módulo Logística
+    // Consultar stock disponible en el módulo Logística y, si hay, pedirle que lo asigne.
+    // La necesidad no se descuenta acá: se satisface cuando Logística reporta la entrega.
     Integer stockDisponible = logisticaClient.consultarStockDeProducto(productoID);
     if (stockDisponible > 0) {
-      int cantidadAAsignar = Math.min(stockDisponible, necesidadMaterialGuardado.getCantidadObjetivo());
       boolean asignado = logisticaClient.asignarStockANecesidad(
-          productoID,
-          String.valueOf(necesidadMaterialGuardado.getId()),
-          cantidadAAsignar);
+          necesidadesMaterialesDataMapper.toNecesidadMaterialDTO(necesidadMaterialGuardado));
 
       if (asignado) {
-        int nuevaCantidad = necesidadMaterialGuardado.getCantidadObjetivo() - cantidadAAsignar;
-        necesidadMaterialGuardado.setCantidadObjetivo(Math.max(nuevaCantidad, 0));
-        necesidadMaterialGuardado = this.necesidadesMaterialesRepository.save(necesidadMaterialGuardado);
-        log.info("Stock asignado automáticamente: {} unidades para necesidad {}", cantidadAAsignar, necesidadMaterialGuardado.getId());
+        log.info("Logística asignó stock a la necesidad {}", necesidadMaterialGuardado.getId());
       }
     }
 
